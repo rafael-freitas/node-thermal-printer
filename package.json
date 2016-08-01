@@ -1,27 +1,28 @@
 {
-  "name": "node-thermal-printer",
-  "version": "0.0.24",
-  "description": "Made to work with Epson and Star thermal printers",
+  "name": "node-thermal-printer-driver",
+  "version": "0.0.1",
+  "description": "Made to work with Epson, Star e Zjiang ZJ-58 thermal printers",
   "main": "node-thermal-printer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Klemen1337/node-thermal-printer"
+    "url": "https://github.com/rafael-freitas/node-thermal-printer"
   },
   "keywords": [
     "thermal",
     "printer",
     "epson",
-    "star"
+    "star",
+    "zj-58"
   ],
   "author": "Klemen Kastelic <klemen.kast@gmail.com> (http://kastelic.net/)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Klemen1337/node-thermal-printer/issues"
+    "url": "https://github.com/rafael-freitas/node-thermal-printer/issues"
   },
-  "homepage": "https://github.com/Klemen1337/node-thermal-printer",
+  "homepage": "https://github.com/rafael-freitas/node-thermal-printer",
   "dependencies": {
     "net": "^1.0.2",
     "unorm": "^1.4.1",
