@@ -14,11 +14,7 @@ var buffer = null;
 
 module.exports = {
   init: function(initConfig){
-    if(initConfig.type === 'star'){
-      config = require('./configs/starConfig');
-    } else {
-      config = require('./configs/epsonConfig');
-    }
+    config = require('./configs/'+ initConfig.type +'Config');
 
     if(!initConfig.width) initConfig.width = 48;
     if(!initConfig.characterSet) initConfig.characterSet = "SLOVENIA";
@@ -61,7 +57,7 @@ module.exports = {
     append(config.PAPER_FULL_CUT);
     append(config.HW_INIT);
   },
-  
+
   partialCut: function(){
     append(config.CTL_VT);
     append(config.CTL_VT);
@@ -114,7 +110,7 @@ module.exports = {
     if(enabled) append(config.TXT_BOLD_ON);
     else append(config.TXT_BOLD_OFF);
   },
-  
+
   underline: function(enabled){
     if(enabled) append(config.TXT_UNDERL_ON);
     else append(config.TXT_UNDERL_OFF);
@@ -124,7 +120,7 @@ module.exports = {
     if(enabled) append(config.TXT_UNDERL2_ON);
     else append(config.TXT_UNDERL_OFF);
   },
-  
+
   invert: function(enabled){
     if (printerConfig.type == 'star'){
       console.error("Invert not supported on STAR yet");

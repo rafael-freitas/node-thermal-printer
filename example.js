@@ -1,6 +1,6 @@
 var printer = require("./node-thermal-printer");
 printer.init({
-  type: 'star',            // 'star' or 'epson'
+  type: 'star',            // 'star' or 'epson' or 'zj-58'
   interface: '/dev/usb/lp0',
   width: 48,                // Number of characters in one line (default 48)
   characterSet: 'SLOVENIA'  // Character set default SLOVENIA
@@ -64,4 +64,3 @@ printer.tableCustom([
 printer.cut();
 printer.openCashDrawer();
 printer.execute();
-
