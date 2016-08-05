@@ -1,6 +1,6 @@
 {
   "name": "node-thermal-printer-driver",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Made to work with Epson, Star e Zjiang ZJ-58 thermal printers",
   "main": "node-thermal-printer.js",
   "scripts": {
