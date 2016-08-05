@@ -290,126 +290,186 @@ module.exports = {
 
 
   printQR: function(str){
-    if (printerConfig.type == 'star') {
-      // ------------------------------ Star QR ------------------------------
-      // [Name] Set QR code model
-      // [Code] Hex. 1B 1D 79 53 30 n
-      // [Defined Area] 1 ≤ n ≤ 2
-      // [Initial Value] n = 2
-      // [Function] Sets the model.
-      // 	• Parameter details
-      // n | Set Model
-      //---+---------------
-      // 1 | Model 1
-      // 2 | Model 2
-      append(config.QRCODE_MODEL1);
+    switch (printerConfig.type) {
+      case 'zj-58':
+        // ------------------------------ ZJ 58 ------------------------------
+
+        // [Name] Select the QR code model
+        // [Code] 1D 28 6B 04 00 31 41 n1 n2
+        // n1
+        // [49 x31, model 1]
+        // [50 x32, model 2]
+        // [51 x33, micro qr code]
+        // n2 = 0
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=140
+        // append(config.QRCODE_MODEL1);
+
+        // [Name]: Set the size of module
+        // 1D 28 6B 03 00 31 43 n
+        // n depends on the printer
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=141
+        append(config.QRCODE_CELLSIZE_6);
 
 
-      // [Name] Set QR code mistake correction level
-      // [Code] Hex. 1B 1D 79 53 31 n
-      // [Defined Area] 0 ≤ n ≤ 3
-      // [Initial Value] n = 0
-      // [Function] Sets the mistake correction level.
-      // 	• Parameter details
-      // n | Correction Level | Mistake Correction Rate (%)
-      // --+------------------+----------------------------
-      // 0 | L 								|	7
-      // 1 | M 								| 15
-      // 2 | Q 							  | 25
-      // 3 | H 								| 30
-      append(config.QRCODE_CORRECTION_M);
+        // [Name] Select the error correction level
+        // 1D 28 6B 03 00 31 45 n
+        // n
+        // [48 x30 -> 7%]
+        // [49 x31-> 15%]
+        // [50 x32 -> 25%]
+        // [51 x33 -> 30%]
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=142
+        // append(config.QRCODE_CORRECTION_M);
 
 
-      // [Name] Set QR code cell size
-      // [Code] Hex. 1B 1D 79 53 32 n
-      // [Defined Area] 1 ≤ n ≤ 8
-      // [Initial Value] n = 3
-      // [Function] Sets the cell size.
-      //	• Parameter details
-      //	• n: Cell size (Units: Dots)
-      //	• It is recommended that the specification using this command be 3 ≤ n.
-      //	  If n = 1 or 2, check by actually using.
-      append(config.QRCODE_CELLSIZE_4);
+        // [Name] Store the data in the symbol storage area
+        // 1D 28  6B pL pH 31 50 30 d1...dk
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=143
+        var s = str.length + 0;
+        var lsb = parseInt(s % 256);
+        var msb = parseInt(s / 256);
+
+        /*
+          [Hexadecimal Format] 1B 5A m n k dL dH d1...dn
+          [Description]
+          M: specify the logo ofversion(1~40,0:autosize)
+          n: specify the ECC level(L:7%,M:15%,Q:25%,H:30%)
+              http://blog.qrstuff.com/2011/12/14/qr-code-error-correction
+              Level L – up to 7% damage
+              Level M – up to 15% damage
+              Level Q – up to 25% damage
+              Level H – up to 30% damage
+          k: specify the component types(1~8)
+          D: is the length of the data and it contains 2 bytes.
+          dL: The first byte is low number.
+          dH: the second byte is superior.
+          d1...dn: are the bar code data.
+          When m is 0, the printer will choose the barcode type automatically .
+         */
+        //                  1B    5A    m      n    k     dl   dH
+        append(new Buffer([0x1B, 0x5A, 0x01, 0x00, 0x08, lsb, msb]))
+        // append(new Buffer([0x1d, 0x28, 0x6b, lsb, msb, 0x31, 0x50, 0x30]));
+        append(new Buffer(str));
+        break;
+      case 'star':
+        // ------------------------------ Star QR ------------------------------
+        // [Name] Set QR code model
+        // [Code] Hex. 1B 1D 79 53 30 n
+        // [Defined Area] 1 ≤ n ≤ 2
+        // [Initial Value] n = 2
+        // [Function] Sets the model.
+        // 	• Parameter details
+        // n | Set Model
+        //---+---------------
+        // 1 | Model 1
+        // 2 | Model 2
+        append(config.QRCODE_MODEL1);
 
 
-      // [Name] Set QR code cell size (Auto Setting)
-      // [Code] Hex. 1B 1D 79 44 31 m nL nH d1 d2 … dk
-      // [Defined Area]
-      // m = 0
-      // 0 ≤ nL ≤ 255,
-      // 0 ≤ nH ≤ 255
-      // 1 ≤ nL + nH x 256 ≤ 7089 (k = nL + nH x 256)
-      // 0 ≤ d ≤ 255
-      // [Function]
-      // Automatically expands the data type of the bar code and sets the data.
-      //	• Parameter details
-      //	• nL + nH x 256: Byte count of bar code data
-      //	• dk: Bar code data (Max. 7089 bytes)
-      //	• When using this command, the printer receives data for the number of bytes (k) specified by nL and nH. The data automatically expands to be set as the qr code data.
-      //	• Indicates the number bytes of data specified by the nL and nH. Bar code data is cleared at this time.
-      //	• The data storage region of this command is shared with the manual setting command so data is updated each time either command is executed.
-      var s = str.length;
-      var lsb = parseInt(s % 256);
-      var msb = parseInt(s / 256);
-
-      append(new Buffer([lsb, msb]));  // nL, nH
-      append(new Buffer(str.toString()));  // Data
-      append(new Buffer([0x0a])); // NL (new line)
+        // [Name] Set QR code mistake correction level
+        // [Code] Hex. 1B 1D 79 53 31 n
+        // [Defined Area] 0 ≤ n ≤ 3
+        // [Initial Value] n = 0
+        // [Function] Sets the mistake correction level.
+        // 	• Parameter details
+        // n | Correction Level | Mistake Correction Rate (%)
+        // --+------------------+----------------------------
+        // 0 | L 								|	7
+        // 1 | M 								| 15
+        // 2 | Q 							  | 25
+        // 3 | H 								| 30
+        append(config.QRCODE_CORRECTION_M);
 
 
-      // [Name] Print QR code
-      // [Code] 1B 1D 79 50
-      // [Function] Prints bar code data.
-      // When receiving this command, if there is unprinted data in the image buffer, the printer will print the bar code after printing the unprinted print data.
-      // A margin of more than 4 cells is required around the QR code. The user should ensure that space. Always check printed bar codes in actual use.
-      append(config.QRCODE_PRINT);
-
-    } else {
-      // ------------------------------ Epson QR ------------------------------
-
-      // [Name] Select the QR code model
-      // [Code] 1D 28 6B 04 00 31 41 n1 n2
-      // n1
-      // [49 x31, model 1]
-      // [50 x32, model 2]
-      // [51 x33, micro qr code]
-      // n2 = 0
-      // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=140
-      append(config.QRCODE_MODEL1);
-
-      // [Name]: Set the size of module
-      // 1D 28 6B 03 00 31 43 n
-      // n depends on the printer
-      // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=141
-      append(config.QRCODE_CELLSIZE_6);
+        // [Name] Set QR code cell size
+        // [Code] Hex. 1B 1D 79 53 32 n
+        // [Defined Area] 1 ≤ n ≤ 8
+        // [Initial Value] n = 3
+        // [Function] Sets the cell size.
+        //	• Parameter details
+        //	• n: Cell size (Units: Dots)
+        //	• It is recommended that the specification using this command be 3 ≤ n.
+        //	  If n = 1 or 2, check by actually using.
+        append(config.QRCODE_CELLSIZE_4);
 
 
-      // [Name] Select the error correction level
-      // 1D 28 6B 03 00 31 45 n
-      // n
-      // [48 x30 -> 7%]
-      // [49 x31-> 15%]
-      // [50 x32 -> 25%]
-      // [51 x33 -> 30%]
-      // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=142
-      append(config.QRCODE_CORRECTION_M);
+        // [Name] Set QR code cell size (Auto Setting)
+        // [Code] Hex. 1B 1D 79 44 31 m nL nH d1 d2 … dk
+        // [Defined Area]
+        // m = 0
+        // 0 ≤ nL ≤ 255,
+        // 0 ≤ nH ≤ 255
+        // 1 ≤ nL + nH x 256 ≤ 7089 (k = nL + nH x 256)
+        // 0 ≤ d ≤ 255
+        // [Function]
+        // Automatically expands the data type of the bar code and sets the data.
+        //	• Parameter details
+        //	• nL + nH x 256: Byte count of bar code data
+        //	• dk: Bar code data (Max. 7089 bytes)
+        //	• When using this command, the printer receives data for the number of bytes (k) specified by nL and nH. The data automatically expands to be set as the qr code data.
+        //	• Indicates the number bytes of data specified by the nL and nH. Bar code data is cleared at this time.
+        //	• The data storage region of this command is shared with the manual setting command so data is updated each time either command is executed.
+        var s = str.length;
+        var lsb = parseInt(s % 256);
+        var msb = parseInt(s / 256);
+
+        append(new Buffer([lsb, msb]));  // nL, nH
+        append(new Buffer(str.toString()));  // Data
+        append(new Buffer([0x0a])); // NL (new line)
 
 
-      // [Name] Store the data in the symbol storage area
-      // 1D 28  6B pL pH 31 50 30 d1...dk
-      // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=143
-      var s = str.length + 3;
-      var lsb = parseInt(s % 256);
-      var msb = parseInt(s / 256);
-      append(new Buffer([0x1d, 0x28, 0x6b, lsb, msb, 0x31, 0x50, 0x30]));
-      append(new Buffer(str));
+        // [Name] Print QR code
+        // [Code] 1B 1D 79 50
+        // [Function] Prints bar code data.
+        // When receiving this command, if there is unprinted data in the image buffer, the printer will print the bar code after printing the unprinted print data.
+        // A margin of more than 4 cells is required around the QR code. The user should ensure that space. Always check printed bar codes in actual use.
+        append(config.QRCODE_PRINT);
+        break;
+      default:
+        // ------------------------------ Epson QR ------------------------------
+
+        // [Name] Select the QR code model
+        // [Code] 1D 28 6B 04 00 31 41 n1 n2
+        // n1
+        // [49 x31, model 1]
+        // [50 x32, model 2]
+        // [51 x33, micro qr code]
+        // n2 = 0
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=140
+        append(config.QRCODE_MODEL1);
+
+        // [Name]: Set the size of module
+        // 1D 28 6B 03 00 31 43 n
+        // n depends on the printer
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=141
+        append(config.QRCODE_CELLSIZE_6);
 
 
-      // [Name] Print the symbol data in the symbol storage area
-      // 1D 28 6B 03 00 31 51 m
-      // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=144
-      append(config.QRCODE_PRINT);
+        // [Name] Select the error correction level
+        // 1D 28 6B 03 00 31 45 n
+        // n
+        // [48 x30 -> 7%]
+        // [49 x31-> 15%]
+        // [50 x32 -> 25%]
+        // [51 x33 -> 30%]
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=142
+        append(config.QRCODE_CORRECTION_M);
 
+
+        // [Name] Store the data in the symbol storage area
+        // 1D 28  6B pL pH 31 50 30 d1...dk
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=143
+        var s = str.length + 3;
+        var lsb = parseInt(s % 256);
+        var msb = parseInt(s / 256);
+        append(new Buffer([0x1d, 0x28, 0x6b, lsb, msb, 0x31, 0x50, 0x30]));
+        append(new Buffer(str));
+
+
+        // [Name] Print the symbol data in the symbol storage area
+        // 1D 28 6B 03 00 31 51 m
+        // https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=144
+        append(config.QRCODE_PRINT);
     }
   },
 
